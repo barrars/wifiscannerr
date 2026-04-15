@@ -243,12 +243,13 @@ code { font-size: 11.5px; background: #f1f5f9; padding: 2px 6px; border-radius: 
 
 <script>
 // ── State ────────────────────────────────────────────────────────────────────
-var _scanCache = null;
-var _scanning  = false;
-var _sortCol   = -1, _sortDir = 1;
+var _scanCache    = null;
+var _scanning     = false;
+var _sortCol      = -1, _sortDir = 1;
+var _savedFilters = { q: '', sig: '', band: '', sec: '' };
 
 // ── Routing ──────────────────────────────────────────────────────────────────
-function goHome() { location.hash = '#/'; }
+function goHome() { _savedFilters = { q: '', sig: '', band: '', sec: '' }; location.hash = '#/'; }
 
 window.addEventListener('hashchange', route);
 window.addEventListener('load', route);
@@ -536,6 +537,13 @@ function renderDetail(scan) {
 
   buildChChart(chCounts);
   _sortCol = -1; _sortDir = 1;
+
+  // Restore any filters that were active before navigating
+  var fq = $id('fq'); if (fq) fq.value = _savedFilters.q;
+  var fs = $id('fsig');  if (fs) fs.value = _savedFilters.sig;
+  var fb = $id('fband'); if (fb) fb.value = _savedFilters.band;
+  var fc = $id('fsec');  if (fc) fc.value = _savedFilters.sec;
+  if (_savedFilters.q || _savedFilters.sig || _savedFilters.band || _savedFilters.sec) applyFilters();
 }
 
 function delAndGoHome(id) {
@@ -570,6 +578,8 @@ function applyFilters() {
   var sigF = ($id('fsig')  || {}).value || '';
   var bandF= ($id('fband') || {}).value || '';
   var secF = ($id('fsec')  || {}).value || '';
+  // Persist so filters survive Older/Newer navigation
+  _savedFilters = { q: q, sig: sigF, band: bandF, sec: secF };
   q = q.toLowerCase();
   var vis = 0;
   var rows = document.querySelectorAll('#wt tbody tr');
@@ -665,6 +675,19 @@ function startScan() {
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') closeModal();
   if (e.key === 'Enter' && $id('modal').style.display !== 'none' && $id('locInp') === document.activeElement) startScan();
+
+  // J = older scan, L = newer scan (skip when typing in an input/textarea)
+  if (e.key === 'j' || e.key === 'l') {
+    var tag = (document.activeElement || {}).tagName || '';
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+    if ($id('modal').style.display !== 'none') return;
+    var m = (location.hash || '').match(/^#\/scan\/(.+)$/);
+    if (!m || !_scanCache || _scanCache.length < 2) return;
+    var idx  = _scanCache.findIndex(function(s) { return s.id === m[1]; });
+    if (idx === -1) return;
+    var target = e.key === 'j' ? _scanCache[idx + 1] : _scanCache[idx - 1];
+    if (target) location.hash = '#/scan/' + target.id;
+  }
 });
 </script>
 </body>
