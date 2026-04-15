@@ -31,14 +31,23 @@ New-Item -ItemType Directory -Force -Path $reportsDir | Out-Null
 
 # ─── Scan ───────────────────────────────────────────────────
 Write-Host ""
-Write-Host "Initializing scan (refreshing Windows network list)..." -ForegroundColor DarkGray
-& netsh wlan show networks mode=bssid | Out-Null
-Start-Sleep -Seconds 2
+# Poll netsh up to 4 times and keep whichever result has the most APs.
+# Each call nudges Windows to refresh its BSSID cache; a full radio scan
+# cycle typically completes within 3-9 seconds on most adapters.
+$bestLines = @()
+$bestCount = 0
+for ($poll = 1; $poll -le 4; $poll++) {
+    Write-Host "  Pass $poll of 4..." -ForegroundColor DarkGray
+    $attempt = & netsh wlan show networks mode=bssid 2>&1
+    $apCount = ($attempt | Select-String -Pattern '^BSSID \d+').Count
+    if ($apCount -gt $bestCount) { $bestCount = $apCount; $bestLines = $attempt }
+    if ($poll -lt 4) { Start-Sleep -Seconds 3 }
+}
 
 Write-Host "Scanning WiFi at: $location ..." -ForegroundColor Yellow
 Write-Host ""
 
-$rawLines = & netsh wlan show networks mode=bssid 2>&1
+$rawLines = $bestLines
 
 if (-not $rawLines) {
     Write-Host "ERROR: No output from netsh. Make sure your Wi-Fi adapter is enabled." -ForegroundColor Red

@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WiFi Surveyor</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+  background: #eef0f4; color: #1a1a2e; min-height: 100vh;
+}
+
+/* ── Nav ── */
+.topnav {
+  background: linear-gradient(135deg, #1a2a6c 0%, #b21f1f 60%, #e8a900 100%);
+  color: #fff; height: 58px; padding: 0 24px;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 100;
+  box-shadow: 0 2px 14px rgba(0,0,0,0.25);
+}
+.nav-brand {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 1.15em; font-weight: 700; color: #fff; cursor: pointer;
+}
+.nav-brand span { font-size: 1.35em; }
+
+/* ── Buttons ── */
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 16px; border-radius: 8px; border: none;
+  cursor: pointer; font-size: 13.5px; font-weight: 500;
+  transition: opacity .15s, transform .1s;
+}
+.btn:active { transform: scale(.97); }
+.btn-primary { background: #3b82f6; color: #fff; }
+.btn-primary:hover { opacity: .88; }
+.btn-danger  { background: #ef4444; color: #fff; }
+.btn-danger:hover  { opacity: .88; }
+.btn-ghost   { background: transparent; color: rgba(255,255,255,.85); border: 1px solid rgba(255,255,255,.35); }
+.btn-ghost:hover { background: rgba(255,255,255,.15); color: #fff; }
+.btn-neutral { background: #f1f5f9; color: #374151; }
+.btn-neutral:hover { background: #e2e8f0; }
+.btn-sm { padding: 5px 11px; font-size: 12px; }
+
+/* ── Page ── */
+.page { max-width: 1300px; margin: 0 auto; padding: 28px 20px; }
+
+/* ── Home ── */
+.home-hdr {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 22px; flex-wrap: wrap; gap: 12px;
+}
+.home-hdr h2 { font-size: 1.25em; color: #374151; }
+.scan-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+.scan-card {
+  background: #fff; border-radius: 14px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+  overflow: hidden; cursor: pointer;
+  transition: transform .15s, box-shadow .15s;
+}
+.scan-card:hover { transform: translateY(-2px); box-shadow: 0 6px 22px rgba(0,0,0,0.13); }
+.card-hdr { padding: 16px 18px 12px; border-bottom: 1px solid #f0f2f5; }
+.card-loc {
+  font-size: 1.05em; font-weight: 700; color: #1a2a6c;
+  margin-bottom: 3px; display: flex; align-items: center; gap: 7px; min-height: 26px;
+}
+.card-date { font-size: 11.5px; color: #9ca3af; }
+.card-body { padding: 12px 18px 14px; display: flex; gap: 0; }
+.card-stat { flex: 1; text-align: center; }
+.cs-val { font-size: 1.6em; font-weight: 700; }
+.cs-lbl { font-size: 11px; color: #9ca3af; }
+.card-ftr {
+  padding: 9px 14px; border-top: 1px solid #f0f2f5;
+  display: flex; justify-content: flex-end; gap: 6px;
+}
+
+/* Empty state */
+.empty { text-align: center; padding: 80px 20px; color: #9ca3af; }
+.empty .icon { font-size: 3.5em; margin-bottom: 14px; }
+.empty h3 { font-size: 1.15em; color: #374151; margin-bottom: 6px; }
+
+/* ── Modal ── */
+.modal-bg {
+  position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 200;
+  display: flex; align-items: center; justify-content: center;
+  backdrop-filter: blur(3px);
+}
+.modal {
+  background: #fff; border-radius: 16px; padding: 30px;
+  width: 100%; max-width: 430px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.3); position: relative;
+}
+.modal h2 { margin-bottom: 20px; font-size: 1.2em; }
+.modal-close {
+  position: absolute; top: 14px; right: 16px;
+  background: none; border: none; font-size: 1.4em; cursor: pointer; color: #9ca3af; line-height: 1;
+}
+.modal-close:hover { color: #374151; }
+.form-group { margin-bottom: 16px; }
+.form-group label { display: block; font-size: 13px; font-weight: 500; margin-bottom: 5px; color: #374151; }
+.form-group input {
+  width: 100%; padding: 10px 13px; border: 1px solid #dde1e7;
+  border-radius: 8px; font-size: 14px; outline: none;
+}
+.form-group input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px #3b82f620; }
+
+/* Scan progress */
+.scan-prog { text-align: center; padding: 18px 0; }
+.spinner {
+  width: 46px; height: 46px; border: 4px solid #e5e7eb;
+  border-top-color: #3b82f6; border-radius: 50%;
+  animation: spin .75s linear infinite; margin: 0 auto 14px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.scan-stat { color: #6b7280; font-size: 13.5px; margin-top: 8px; }
+
+/* ── Detail view ── */
+.detail-nav {
+  display: flex; align-items: flex-start; gap: 14px;
+  margin-bottom: 20px; flex-wrap: wrap;
+}
+.detail-title { flex: 1; }
+.detail-title h2 { font-size: 1.3em; color: #1a2a6c; }
+.detail-meta { font-size: 11.5px; color: #9ca3af; margin-top: 3px; }
+
+/* Panels */
+.panel { background: #fff; border-radius: 14px; box-shadow: 0 2px 10px rgba(0,0,0,0.07); margin-bottom: 16px; overflow: hidden; }
+.panel-hdr { padding: 13px 22px; border-bottom: 1px solid #f0f2f5; font-size: .72em; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #9ca3af; }
+
+/* Stats */
+.stats-row { display: flex; flex-wrap: wrap; }
+.stat-item { flex: 1; min-width: 70px; text-align: center; padding: 14px 8px; }
+.stat-val { font-size: 1.75em; font-weight: 700; line-height: 1; }
+.stat-lbl { font-size: 11px; color: #9ca3af; margin-top: 4px; }
+.c-blue   { color: #3b82f6; } .c-purple { color: #8b5cf6; }
+.c-green  { color: #10b981; } .c-yellow { color: #d97706; }
+.c-orange { color: #f97316; } .c-red    { color: #ef4444; }
+
+/* Channel chart */
+.ch-wrap { padding: 14px 22px 18px; }
+.ch-chart { display: flex; align-items: flex-end; gap: 7px; height: 82px; flex-wrap: wrap; }
+.ch-col { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.ch-bar { width: 34px; border-radius: 4px 4px 0 0; background: #3b82f6; min-height: 4px; cursor: default; transition: opacity .15s; }
+.ch-bar:hover { opacity: .8; }
+.ch-bar.ghz5 { background: #8b5cf6; }
+.ch-cnt { font-size: 11px; font-weight: 600; color: #374151; }
+.ch-lbl { font-size: 11px; color: #9ca3af; }
+.ch-legend { display: flex; gap: 16px; margin-top: 10px; font-size: 12px; color: #6b7280; }
+.leg-dot { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 4px; vertical-align: middle; }
+
+/* Filters */
+.filters { padding: 13px 22px; display: flex; gap: 9px; flex-wrap: wrap; align-items: center; border-bottom: 1px solid #f0f2f5; }
+.filters input, .filters select {
+  padding: 8px 11px; border: 1px solid #dde1e7; border-radius: 8px;
+  font-size: 13px; background: #f8f9fa; color: #1a1a2e; outline: none;
+}
+.filters input { flex: 1; min-width: 170px; }
+.filters input:focus, .filters select:focus { border-color: #3b82f6; background: #fff; }
+
+/* Table */
+.table-wrap { overflow-x: auto; padding: 0 22px 22px; }
+table { width: 100%; border-collapse: collapse; font-size: 13.5px; margin-top: 14px; }
+thead th {
+  background: #1a2a6c; color: #fff; padding: 10px 12px;
+  text-align: left; cursor: pointer; user-select: none; white-space: nowrap;
+}
+thead th:hover { background: #243382; }
+thead th::after { content: ' \2195'; opacity: .35; font-size: 10px; }
+thead th.asc::after  { content: ' \2191'; opacity: 1; }
+thead th.desc::after { content: ' \2193'; opacity: 1; }
+tbody td { padding: 9px 12px; border-bottom: 1px solid #f0f2f5; vertical-align: middle; }
+tbody tr:hover { background: #f5f8ff; }
+tbody tr:last-child td { border-bottom: none; }
+code { font-size: 11.5px; background: #f1f5f9; padding: 2px 6px; border-radius: 4px; }
+
+/* Signal bar */
+.bar-wrap { display: flex; align-items: center; gap: 7px; }
+.bar-out { width: 62px; height: 7px; background: #e5e7eb; border-radius: 99px; flex-shrink: 0; overflow: hidden; }
+.bar-in  { height: 100%; border-radius: 99px; }
+.bar-wrap span { font-size: 12px; font-weight: 600; white-space: nowrap; }
+.sx .bar-in { background: #10b981; } .sx span { color: #059669; }
+.sg .bar-in { background: #f59e0b; } .sg span { color: #d97706; }
+.sf .bar-in { background: #f97316; } .sf span { color: #ea580c; }
+.sp .bar-in { background: #ef4444; } .sp span { color: #dc2626; }
+
+/* Badges */
+.badge { display: inline-block; padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 500; white-space: nowrap; }
+.b-wpa3  { background: #d1fae5; color: #065f46; }
+.b-wpa2  { background: #dbeafe; color: #1e40af; }
+.b-wpa   { background: #ede9fe; color: #4c1d95; }
+.b-open  { background: #fee2e2; color: #991b1b; }
+.b-other { background: #f3f4f6; color: #374151; }
+
+.no-results { text-align: center; padding: 30px; color: #9ca3af; }
+
+/* Inline rename */
+.rename-inp {
+  border: none; border-bottom: 2px solid #3b82f6; outline: none;
+  font-size: 1.05em; font-weight: 700; color: #1a2a6c;
+  background: transparent; width: 100%;
+}
+
+/* Error */
+.err-box { background: #fee2e2; color: #991b1b; padding: 14px 18px; border-radius: 10px; text-align: center; }
+
+/* Toast */
+.toast {
+  position: fixed; bottom: 22px; right: 22px;
+  background: #1e293b; color: #fff; padding: 11px 18px;
+  border-radius: 10px; box-shadow: 0 4px 18px rgba(0,0,0,.22);
+  font-size: 13.5px; z-index: 500; animation: slideUp .2s ease;
+}
+.toast.err { background: #ef4444; }
+@keyframes slideUp { from { opacity:0; transform: translateY(14px); } to { opacity:1; transform: none; } }
+</style>
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="nav-brand" onclick="goHome()">
+    <span>&#x1F4E1;</span> WiFi Surveyor
+  </div>
+  <button class="btn btn-ghost" onclick="openModal()">&#xFF0B; New Scan</button>
+</nav>
+
+<div id="app" class="page"></div>
+
+<!-- Modal -->
+<div id="modal" class="modal-bg" style="display:none" onclick="bgClick(event)">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">&times;</button>
+    <h2>&#x1F4E1; New WiFi Scan</h2>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<div id="toasts"></div>
+
+<script>
+// ── State ────────────────────────────────────────────────────────────────────
+var _scanCache = null;
+var _scanning  = false;
+var _sortCol   = -1, _sortDir = 1;
+
+// ── Routing ──────────────────────────────────────────────────────────────────
+function goHome() { location.hash = '#/'; }
+
+window.addEventListener('hashchange', route);
+window.addEventListener('load', route);
+
+function route() {
+  var h = location.hash || '#/';
+  var m = h.match(/^#\/scan\/(.+)$/);
+  if (m) { loadDetail(m[1]); } else { renderHome(); }
+}
+
+// ── API ──────────────────────────────────────────────────────────────────────
+var api = {
+  list:   function()     { return fetch('/api/scans').then(j); },
+  get:    function(id)   { return fetch('/api/scans/' + enc(id)).then(function(r) { if (!r.ok) throw new Error('Not found'); return r.json(); }); },
+  create: function(loc)  { return fetch('/api/scans', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ location: loc }) }).then(function(r) { return r.json().then(function(d) { if (!r.ok) throw new Error(d.error || 'Scan failed'); return d; }); }); },
+  del:    function(id)   { return fetch('/api/scans/' + enc(id), { method:'DELETE' }).then(j); },
+  rename: function(id,l) { return fetch('/api/scans/' + enc(id), { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ location: l }) }).then(j); }
+};
+function j(r)   { return r.json(); }
+function enc(s) { return encodeURIComponent(s); }
+
+// ── Utils ────────────────────────────────────────────────────────────────────
+function esc(s) {
+  return String(s || '')
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function fmtDate(iso) {
+  var d = new Date(iso);
+  return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
+}
+function toast(msg, isErr) {
+  var el = document.createElement('div');
+  el.className = 'toast' + (isErr ? ' err' : '');
+  el.textContent = msg;
+  document.getElementById('toasts').appendChild(el);
+  setTimeout(function() { el.remove(); }, 3200);
+}
+function $id(id) { return document.getElementById(id); }
+
+// ── Home view ─────────────────────────────────────────────────────────────────
+function renderHome() {
+  $id('app').innerHTML =
+    '<div class="home-hdr"><h2>Previous Scans</h2><button class="btn btn-primary" onclick="openModal()">&#xFF0B; New Scan</button></div>' +
+    '<div id="scanList"><div class="empty"><div class="icon">&#x23F3;</div><p>Loading...</p></div></div>';
+
+  api.list().then(function(scans) {
+    _scanCache = scans;
+    var el = $id('scanList');
+    if (!el) return;
+    if (!scans.length) {
+      el.innerHTML = '<div class="empty"><div class="icon">&#x1F4E1;</div><h3>No scans yet</h3><p>Click <strong>+ New Scan</strong> to get started.</p></div>';
+      return;
+    }
+    el.innerHTML = '<div class="scan-grid">' + scans.map(cardHtml).join('') + '</div>';
+  }).catch(function(e) {
+    var el = $id('scanList');
+    if (el) el.innerHTML = '<div class="err-box">Error loading scans: ' + esc(e.message) + '</div>';
+  });
+}
+
+function cardHtml(s) {
+  return [
+    '<div class="scan-card" id="card-' + esc(s.id) + '" onclick="cardClick(\'' + esc(s.id) + '\',event)">',
+    '  <div class="card-hdr">',
+    '    <div class="card-loc">&#x1F4CD; <span id="cloc-' + esc(s.id) + '">' + esc(s.location) + '</span></div>',
+    '    <div class="card-date">' + fmtDate(s.timestamp) + ' &bull; ' + esc(s.computer || '') + '</div>',
+    '  </div>',
+    '  <div class="card-body">',
+    '    <div class="card-stat"><div class="cs-val c-blue">' + s.networkCount + '</div><div class="cs-lbl">Networks</div></div>',
+    '    <div class="card-stat"><div class="cs-val c-blue">' + s.apCount + '</div><div class="cs-lbl">Access Points</div></div>',
+    '  </div>',
+    '  <div class="card-ftr">',
+    '    <button class="btn btn-neutral btn-sm" onclick="openNewTab(event,\'' + esc(s.id) + '\')">&#x2197; New Tab</button>',
+    '    <button class="btn btn-neutral btn-sm" onclick="startRename(event,\'' + esc(s.id) + '\')">&#x270F; Rename</button>',
+    '    <button class="btn btn-danger  btn-sm" onclick="deleteCard(event,\'' + esc(s.id) + '\')">&#x1F5D1; Delete</button>',
+    '  </div>',
+    '</div>'
+  ].join('');
+}
+
+function cardClick(id, e) {
+  if (e && e.target && e.target.closest('button')) return;
+  location.hash = '#/scan/' + id;
+}
+
+function openNewTab(e, id) {
+  e.stopPropagation();
+  window.open('/#/scan/' + id, '_blank');
+}
+
+// ── Inline rename ─────────────────────────────────────────────────────────────
+function startRename(e, id) {
+  e.stopPropagation();
+  var span = $id('cloc-' + id);
+  if (!span) return;
+  var old = span.textContent;
+  span.innerHTML = '<input class="rename-inp" id="ri-' + esc(id) + '" value="' + esc(old) + '" maxlength="100">';
+  var inp = $id('ri-' + id);
+  if (!inp) return;
+  inp.focus(); inp.select();
+
+  function commit() {
+    var val = inp.value.trim();
+    if (val && val !== old) {
+      api.rename(id, val)
+        .then(function() {
+          span.textContent = val;
+          if (_scanCache) { var s = _scanCache.find(function(x) { return x.id === id; }); if (s) s.location = val; }
+          toast('Renamed to "' + val + '"');
+        })
+        .catch(function() { span.textContent = old; toast('Rename failed', true); });
+    } else {
+      span.textContent = old;
+    }
+  }
+  inp.addEventListener('blur', commit);
+  inp.addEventListener('keydown', function(ev) {
+    if (ev.key === 'Enter')  { ev.preventDefault(); inp.blur(); }
+    if (ev.key === 'Escape') { inp.value = old; inp.blur(); }
+  });
+}
+
+// ── Delete card ───────────────────────────────────────────────────────────────
+function deleteCard(e, id) {
+  e.stopPropagation();
+  if (!confirm('Delete this scan? This cannot be undone.')) return;
+  api.del(id).then(function() {
+    var card = $id('card-' + id);
+    if (card) { card.style.transition = 'opacity .2s'; card.style.opacity = '0'; setTimeout(function() { card.remove(); }, 220); }
+    if (_scanCache) _scanCache = _scanCache.filter(function(s) { return s.id !== id; });
+    // Show empty state if grid is now empty
+    setTimeout(function() {
+      var grid = document.querySelector('.scan-grid');
+      if (grid && !grid.children.length) {
+        $id('scanList').innerHTML = '<div class="empty"><div class="icon">&#x1F4E1;</div><h3>No scans yet</h3><p>Click <strong>+ New Scan</strong> to get started.</p></div>';
+      }
+    }, 250);
+    toast('Scan deleted');
+  }).catch(function() { toast('Delete failed', true); });
+}
+
+// ── Detail view ───────────────────────────────────────────────────────────────
+function loadDetail(id) {
+  $id('app').innerHTML = '<div style="text-align:center;padding:60px;color:#9ca3af">Loading scan...</div>';
+  // Ensure scan list is loaded so prev/next can work
+  var load = _scanCache
+    ? Promise.resolve(_scanCache)
+    : api.list().then(function(l) { _scanCache = l; return l; });
+  load.then(function() { return api.get(id); }).then(renderDetail).catch(function(e) {
+    $id('app').innerHTML = '<div class="err-box">Could not load scan: ' + esc(e.message) + '</div>';
+  });
+}
+
+function prevNextHtml(currentId) {
+  if (!_scanCache || _scanCache.length < 2) return '';
+  var idx  = _scanCache.findIndex(function(s) { return s.id === currentId; });
+  var prev = idx < _scanCache.length - 1 ? _scanCache[idx + 1] : null;
+  var next = idx > 0                      ? _scanCache[idx - 1] : null;
+  var html = '<div style="display:flex;gap:4px">';
+  html += prev
+    ? '<button class="btn btn-neutral btn-sm" onclick="location.hash=\'#/scan/' + prev.id + '\'" title="' + esc(prev.location) + '">&#x2039; Older</button>'
+    : '<button class="btn btn-neutral btn-sm" disabled style="opacity:.35">&#x2039; Older</button>';
+  html += next
+    ? '<button class="btn btn-neutral btn-sm" onclick="location.hash=\'#/scan/' + next.id + '\'" title="' + esc(next.location) + '">Newer &#x203A;</button>'
+    : '<button class="btn btn-neutral btn-sm" disabled style="opacity:.35">Newer &#x203A;</button>';
+  html += '</div>';
+  return html;
+}
+
+function renderDetail(scan) {
+  var aps  = scan.aps || [];
+  var nets = new Set(aps.map(function(a) { return a.ssid; })).size;
+  var b24  = aps.filter(function(a) { return a.band && a.band.indexOf('2.4') !== -1; }).length;
+  var b5   = aps.filter(function(a) { return a.band && a.band.indexOf('5') !== -1 && a.band.indexOf('2.5') === -1; }).length;
+  var sx   = aps.filter(function(a) { return a.signal >= 80; }).length;
+  var sg   = aps.filter(function(a) { return a.signal >= 60 && a.signal < 80; }).length;
+  var sf   = aps.filter(function(a) { return a.signal >= 40 && a.signal < 60; }).length;
+  var sp   = aps.filter(function(a) { return a.signal < 40; }).length;
+
+  // Channel counts
+  var chCounts = {};
+  aps.forEach(function(a) { if (a.channel) chCounts[a.channel] = (chCounts[a.channel] || 0) + 1; });
+
+  // Table rows sorted by signal desc
+  var rows = aps.slice().sort(function(a,b) { return b.signal - a.signal; }).map(function(ap) {
+    var s   = ap.signal;
+    var sc  = s >= 80 ? 'sx' : s >= 60 ? 'sg' : s >= 40 ? 'sf' : 'sp';
+    var ssl = ap.ssid ? '<strong>' + esc(ap.ssid) + '</strong>' : '<em style="color:#aaa">Hidden</em>';
+    var bc  = ap.auth && ap.auth.indexOf('WPA3') !== -1 ? 'b-wpa3' :
+              ap.auth && ap.auth.indexOf('WPA2') !== -1 ? 'b-wpa2' :
+              ap.auth && ap.auth.indexOf('WPA')  !== -1 ? 'b-wpa'  :
+              ap.auth && /open|none/i.test(ap.auth)     ? 'b-open' : 'b-other';
+    return '<tr data-signal="' + s + '" data-band="' + esc(ap.band||'') + '" data-ssid="' + esc(ap.ssid||'') + '" data-bssid="' + esc(ap.bssid||'') + '" data-auth="' + esc(ap.auth||'') + '">' +
+      '<td>' + ssl + '</td>' +
+      '<td><code>' + esc(ap.bssid||'') + '</code></td>' +
+      '<td class="' + sc + '" data-sort="' + s + '"><div class="bar-wrap"><div class="bar-out"><div class="bar-in" style="width:' + s + '%"></div></div><span>' + s + '%</span></div></td>' +
+      '<td>' + esc(ap.radio   || 'n/a') + '</td>' +
+      '<td>' + esc(ap.band    || 'n/a') + '</td>' +
+      '<td>' + esc(ap.channel || 'n/a') + '</td>' +
+      '<td><span class="badge ' + bc + '">' + esc(ap.auth || 'Unknown') + '</span></td>' +
+      '</tr>';
+  }).join('');
+
+  $id('app').innerHTML = [
+    // Nav bar
+    '<div class="detail-nav">',
+    '  <button class="btn btn-neutral" onclick="goHome()">&#x2190; All Scans</button>',
+    '  ' + prevNextHtml(scan.id),
+    '  <div class="detail-title">',
+    '    <h2>' + esc(scan.location) + '</h2>',
+    '    <div class="detail-meta">' + fmtDate(scan.timestamp) + ' &bull; ' + esc(scan.computer || '') + '</div>',
+    '  </div>',
+    '  <button class="btn btn-neutral btn-sm" onclick="window.open(location.href,\'_blank\')">&#x2197; New Tab</button>',
+    '  <button class="btn btn-danger btn-sm" onclick="delAndGoHome(\'' + esc(scan.id) + '\')">&#x1F5D1; Delete</button>',
+    '</div>',
+
+    // Stats panel
+    '<div class="panel">',
+    '  <div class="panel-hdr">Summary</div>',
+    '  <div class="stats-row">',
+    '    <div class="stat-item"><div class="stat-val c-blue">' + nets + '</div><div class="stat-lbl">Networks</div></div>',
+    '    <div class="stat-item"><div class="stat-val c-blue">' + aps.length + '</div><div class="stat-lbl">Access Points</div></div>',
+    '    <div class="stat-item"><div class="stat-val">' + b24 + '</div><div class="stat-lbl">2.4 GHz</div></div>',
+    '    <div class="stat-item"><div class="stat-val c-purple">' + b5 + '</div><div class="stat-lbl">5 GHz</div></div>',
+    '    <div class="stat-item"><div class="stat-val c-green">' + sx + '</div><div class="stat-lbl">Excellent</div></div>',
+    '    <div class="stat-item"><div class="stat-val c-yellow">' + sg + '</div><div class="stat-lbl">Good</div></div>',
+    '    <div class="stat-item"><div class="stat-val c-orange">' + sf + '</div><div class="stat-lbl">Fair</div></div>',
+    '    <div class="stat-item"><div class="stat-val c-red">' + sp + '</div><div class="stat-lbl">Poor</div></div>',
+    '  </div>',
+    '</div>',
+
+    // Channel chart panel
+    '<div class="panel">',
+    '  <div class="panel-hdr">Channel Utilization</div>',
+    '  <div class="ch-wrap">',
+    '    <div class="ch-chart" id="chChart"></div>',
+    '    <div class="ch-legend">',
+    '      <span><span class="leg-dot" style="background:#3b82f6"></span>2.4 GHz (ch 1&ndash;14)</span>',
+    '      <span><span class="leg-dot" style="background:#8b5cf6"></span>5 GHz (ch 36+)</span>',
+    '    </div>',
+    '  </div>',
+    '</div>',
+
+    // Table panel
+    '<div class="panel">',
+    '  <div class="filters">',
+    '    <input type="text" id="fq" placeholder="Search SSID or BSSID..." oninput="applyFilters()">',
+    '    <select id="fsig" onchange="applyFilters()">',
+    '      <option value="">All Signals</option>',
+    '      <option value="x">Excellent (&ge;80%)</option>',
+    '      <option value="g">Good (60&ndash;79%)</option>',
+    '      <option value="f">Fair (40&ndash;59%)</option>',
+    '      <option value="p">Poor (&lt;40%)</option>',
+    '    </select>',
+    '    <select id="fband" onchange="applyFilters()">',
+    '      <option value="">All Bands</option>',
+    '      <option value="2.4">2.4 GHz</option>',
+    '      <option value="5">5 GHz</option>',
+    '    </select>',
+    '    <select id="fsec" onchange="applyFilters()">',
+    '      <option value="">All Security</option>',
+    '      <option value="WPA3">WPA3</option>',
+    '      <option value="WPA2">WPA2</option>',
+    '      <option value="WPA-">WPA (legacy)</option>',
+    '      <option value="Open">Open</option>',
+    '    </select>',
+    '  </div>',
+    '  <div class="table-wrap">',
+    '    <table id="wt">',
+    '      <thead><tr>',
+    '        <th onclick="sortTable(this,0)">SSID</th>',
+    '        <th onclick="sortTable(this,1)">BSSID</th>',
+    '        <th onclick="sortTable(this,2)">Signal</th>',
+    '        <th onclick="sortTable(this,3)">Radio</th>',
+    '        <th onclick="sortTable(this,4)">Band</th>',
+    '        <th onclick="sortTable(this,5)">Channel</th>',
+    '        <th onclick="sortTable(this,6)">Security</th>',
+    '      </tr></thead>',
+    '      <tbody>' + rows + '</tbody>',
+    '    </table>',
+    '    <div id="noRes" class="no-results" style="display:none">No access points match the current filters.</div>',
+    '  </div>',
+    '</div>'
+  ].join('\n');
+
+  buildChChart(chCounts);
+  _sortCol = -1; _sortDir = 1;
+}
+
+function delAndGoHome(id) {
+  if (!confirm('Delete this scan? This cannot be undone.')) return;
+  api.del(id).then(function() {
+    _scanCache = null;
+    toast('Scan deleted');
+    goHome();
+  }).catch(function() { toast('Delete failed', true); });
+}
+
+// ── Channel chart ─────────────────────────────────────────────────────────────
+function buildChChart(counts) {
+  var el = $id('chChart');
+  if (!el) return;
+  var keys = Object.keys(counts).sort(function(a,b) { return +a - +b; });
+  if (!keys.length) { el.innerHTML = '<span style="color:#9ca3af;font-size:13px">No channel data available</span>'; return; }
+  var maxV = Math.max.apply(null, keys.map(function(k) { return counts[k]; }));
+  el.innerHTML = keys.map(function(ch) {
+    var cnt = counts[ch], is5 = +ch > 14;
+    var h   = Math.max(4, Math.round((cnt / maxV) * 60));
+    return '<div class="ch-col" title="Channel ' + ch + ': ' + cnt + ' AP' + (cnt !== 1 ? 's' : '') + '">' +
+      '<div class="ch-cnt">' + cnt + '</div>' +
+      '<div class="ch-bar' + (is5 ? ' ghz5' : '') + '" style="height:' + h + 'px"></div>' +
+      '<div class="ch-lbl">Ch ' + ch + '</div></div>';
+  }).join('');
+}
+
+// ── Filtering ─────────────────────────────────────────────────────────────────
+function applyFilters() {
+  var q    = ($id('fq')    || {}).value || '';
+  var sigF = ($id('fsig')  || {}).value || '';
+  var bandF= ($id('fband') || {}).value || '';
+  var secF = ($id('fsec')  || {}).value || '';
+  q = q.toLowerCase();
+  var vis = 0;
+  var rows = document.querySelectorAll('#wt tbody tr');
+  rows.forEach(function(r) {
+    var ssid  = (r.dataset.ssid  || '').toLowerCase();
+    var bssid = (r.dataset.bssid || '').toLowerCase();
+    var sig   = parseInt(r.dataset.signal || '0', 10);
+    var band  = r.dataset.band || '';
+    var auth  = r.dataset.auth || '';
+    var ok =
+      (!q    || ssid.indexOf(q) !== -1 || bssid.indexOf(q) !== -1) &&
+      (!sigF || (sigF==='x'&&sig>=80)||(sigF==='g'&&sig>=60&&sig<80)||(sigF==='f'&&sig>=40&&sig<60)||(sigF==='p'&&sig<40)) &&
+      (!bandF|| (bandF==='2.4'&&band.indexOf('2.4')!==-1)||(bandF==='5'&&band.indexOf('5')!==-1&&band.indexOf('2.5')===-1)) &&
+      (!secF || auth.indexOf(secF) !== -1);
+    r.style.display = ok ? '' : 'none';
+    if (ok) vis++;
+  });
+  var nr = $id('noRes');
+  if (nr) nr.style.display = vis === 0 ? '' : 'none';
+}
+
+// ── Table sort ────────────────────────────────────────────────────────────────
+function sortTable(th, col) {
+  if (_sortCol === col) { _sortDir *= -1; } else { _sortCol = col; _sortDir = 1; }
+  document.querySelectorAll('thead th').forEach(function(h) { h.classList.remove('asc','desc'); });
+  th.classList.add(_sortDir === 1 ? 'asc' : 'desc');
+  var tbody = document.querySelector('#wt tbody');
+  var rows  = Array.from(tbody.rows);
+  rows.sort(function(a, b) {
+    var av, bv;
+    if (col === 2) { av = parseInt(a.cells[2].dataset.sort||0,10); bv = parseInt(b.cells[2].dataset.sort||0,10); return _sortDir*(av-bv); }
+    if (col === 5) { av = parseInt(a.cells[5].innerText,10)||0; bv = parseInt(b.cells[5].innerText,10)||0; return _sortDir*(av-bv); }
+    av = (a.cells[col].innerText||'').trim().toLowerCase();
+    bv = (b.cells[col].innerText||'').trim().toLowerCase();
+    return _sortDir * av.localeCompare(bv);
+  });
+  rows.forEach(function(r) { tbody.appendChild(r); });
+}
+
+// ── Modal ─────────────────────────────────────────────────────────────────────
+function openModal() {
+  $id('modal').style.display = 'flex';
+  $id('modalBody').innerHTML =
+    '<div class="form-group"><label>Location Name</label>' +
+    '<input type="text" id="locInp" placeholder="e.g. Conference Room, Floor 2..." maxlength="100" autocomplete="off"></div>' +
+    '<button class="btn btn-primary" style="width:100%" onclick="startScan()">Start Scan</button>';
+  setTimeout(function() { var inp = $id('locInp'); if (inp) inp.focus(); }, 40);
+}
+
+function closeModal() {
+  if (_scanning) return;
+  $id('modal').style.display = 'none';
+}
+
+function bgClick(e) { if (e.target === $id('modal')) closeModal(); }
+
+function startScan() {
+  if (_scanning) return;
+  var inp    = $id('locInp');
+  var locName = (inp ? inp.value.trim() : '') || ('Scan ' + new Date().toLocaleTimeString());
+  _scanning = true;
+
+  var statusEl;
+  $id('modalBody').innerHTML =
+    '<div class="scan-prog">' +
+    '  <div class="spinner"></div>' +
+    '  <div><strong>' + esc(locName) + '</strong></div>' +
+    '  <div class="scan-stat" id="scanStat">Initializing — waking Windows network cache...</div>' +
+    '</div>';
+  statusEl = $id('scanStat');
+  setTimeout(function() { if (statusEl) statusEl.textContent = 'Pass 1 of 4 — polling Windows network cache...'; }, 800);
+  setTimeout(function() { if (statusEl) statusEl.textContent = 'Pass 2 of 4 — waiting for adapter refresh...'; }, 3700);
+  setTimeout(function() { if (statusEl) statusEl.textContent = 'Pass 3 of 4 — collecting additional networks...'; }, 6700);
+  setTimeout(function() { if (statusEl) statusEl.textContent = 'Pass 4 of 4 — finalising results...'; }, 9700);
+
+  api.create(locName)
+    .then(function(result) {
+      _scanning = false;
+      _scanCache = null;
+      $id('modal').style.display = 'none';
+      toast('Found ' + result.apCount + ' access points across ' + result.networkCount + ' networks');
+      location.hash = '#/scan/' + result.id;
+    })
+    .catch(function(e) {
+      _scanning = false;
+      $id('modalBody').innerHTML =
+        '<div class="err-box" style="margin-bottom:14px">' + esc(e.message) + '</div>' +
+        '<button class="btn btn-primary" style="width:100%" onclick="openModal()">Try Again</button>';
+    });
+}
+
+// ── Keyboard ──────────────────────────────────────────────────────────────────
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeModal();
+  if (e.key === 'Enter' && $id('modal').style.display !== 'none' && $id('locInp') === document.activeElement) startScan();
+});
+</script>
+</body>
+</html>
