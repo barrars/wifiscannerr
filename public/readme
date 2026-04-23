@@ -1,0 +1,11 @@
+Done. Here's what was added:
+
+PDF Export — server-side generation using pdfkit, so it builds the PDF directly from the JSON scan data (no screenshots). The PDF includes:
+
+Dark navy header with location, timestamp, and hostname
+Summary stats grid (Networks, APs, 2.4/5 GHz, signal quality counts)
+Visual channel utilization bar chart with color-coded 2.4 / 5 GHz bars
+Full AP table sorted by signal strength, with color-coded signal column and automatic page overflow handling
+How to use — open any scan's detail view and click the green Export PDF button. The browser will download the PDF immediately.
+
+Auto-install on any Windows machine — start_server.bat now runs npm install every time (it's a no-op if everything is already installed), so any new machine that runs the bat will automatically pull down express + pdfkit and all other deps before starting the server.

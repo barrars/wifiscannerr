@@ -41,6 +41,8 @@ body {
 .btn-ghost:hover { background: rgba(255,255,255,.15); color: #fff; }
 .btn-neutral { background: #f1f5f9; color: #374151; }
 .btn-neutral:hover { background: #e2e8f0; }
+.btn-success { background: #10b981; color: #fff; }
+.btn-success:hover { opacity: .88; }
 .btn-sm { padding: 5px 11px; font-size: 12px; }
 
 /* ── Page ── */
@@ -463,6 +465,7 @@ function renderDetail(scan) {
     '    <div class="detail-meta">' + fmtDate(scan.timestamp) + ' &bull; ' + esc(scan.computer || '') + '</div>',
     '  </div>',
     '  <button class="btn btn-neutral btn-sm" onclick="window.open(location.href,\'_blank\')">&#x2197; New Tab</button>',
+    '  <button class="btn btn-success btn-sm" onclick="window.location=\'/api/scans/' + esc(scan.id) + '/pdf\'">&#x1F4C4; Export PDF</button>',
     '  <button class="btn btn-danger btn-sm" onclick="delAndGoHome(\'' + esc(scan.id) + '\')">&#x1F5D1; Delete</button>',
     '</div>',
 

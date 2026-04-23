@@ -17,6 +17,8 @@ if not exist node_modules (
     call npm install --silent
     echo Done.
     echo.
+) else (
+    call npm install --silent 2>nul
 )
 
 echo  Freeing port 3456 if in use...
