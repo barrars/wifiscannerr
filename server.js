@@ -9,7 +9,11 @@ const PDFDocument  = require('pdfkit');
 
 const app       = express();
 const PORT      = 3456;
-const SCANS_DIR = path.join(__dirname, 'scans');
+
+// When packaged with pkg, __dirname is inside the read-only virtual snapshot.
+// Writable files (scans) must live next to the real exe on disk.
+const BASE_DIR  = process.pkg ? path.dirname(process.execPath) : __dirname;
+const SCANS_DIR = path.join(BASE_DIR, 'scans');
 
 if (!fs.existsSync(SCANS_DIR)) fs.mkdirSync(SCANS_DIR, { recursive: true });
 
@@ -407,4 +411,15 @@ app.listen(PORT, '127.0.0.1', () => {
     console.log('  ╚══════════════════════════════════╝');
     console.log('\n  Press Ctrl+C to stop.\n');
     exec(`cmd /c start http://localhost:${PORT}`);
+}).on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+        console.error(`\n  ERROR: Port ${PORT} is already in use.\n`);
+        console.error('  Another instance may already be running.');
+        console.error(`  Open http://localhost:${PORT} in your browser, or close the other instance first.\n`);
+    } else {
+        console.error('\n  ERROR starting server:', err.message, '\n');
+    }
+    console.log('  Press Enter to exit...');
+    process.stdin.resume();
+    process.stdin.once('data', () => process.exit(1));
 });

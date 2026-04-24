@@ -3,11 +3,59 @@
   "version": "1.0.0",
   "description": "WiFi Site Survey Web App",
   "main": "server.js",
+  "bin": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "build": "pkg . --compress GZip --output dist/WiFiSurveyor.exe"
   },
   "dependencies": {
     "express": "^4.18.2",
     "pdfkit": "^0.15.0"
+  },
+  "devDependencies": {
+    "@yao-pkg/pkg": "^5.12.0"
+  },
+  "pkg": {
+    "assets": [
+      "public/**/*",
+      "node_modules/pdfkit/js/data/**/*",
+      "node_modules/es-get-iterator/**/*.js",
+      "node_modules/side-channel/**/*.js",
+      "node_modules/side-channel-list/**/*.js",
+      "node_modules/side-channel-map/**/*.js",
+      "node_modules/side-channel-weakmap/**/*.js",
+      "node_modules/call-bind/**/*.js",
+      "node_modules/call-bind-apply-helpers/**/*.js",
+      "node_modules/call-bound/**/*.js",
+      "node_modules/get-intrinsic/**/*.js",
+      "node_modules/get-proto/**/*.js",
+      "node_modules/dunder-proto/**/*.js",
+      "node_modules/es-errors/**/*.js",
+      "node_modules/es-object-atoms/**/*.js",
+      "node_modules/es-define-property/**/*.js",
+      "node_modules/define-data-property/**/*.js",
+      "node_modules/math-intrinsics/**/*.js",
+      "node_modules/gopd/**/*.js",
+      "node_modules/hasown/**/*.js",
+      "node_modules/has-tostringtag/**/*.js",
+      "node_modules/has-property-descriptors/**/*.js",
+      "node_modules/set-function-length/**/*.js",
+      "node_modules/safe-regex-test/**/*.js",
+      "node_modules/is-array-buffer/**/*.js",
+      "node_modules/is-date-object/**/*.js",
+      "node_modules/is-shared-array-buffer/**/*.js",
+      "node_modules/available-typed-arrays/**/*.js",
+      "node_modules/possible-typed-array-names/**/*.js",
+      "node_modules/array-buffer-byte-length/**/*.js",
+      "node_modules/stop-iteration-iterator/**/*.js",
+      "node_modules/which-collection/**/*.js",
+      "node_modules/deep-equal/**/*.js",
+      "node_modules/supports-preserve-symlinks-flag/**/*.js",
+      "node_modules/tslib/**/*.js",
+      "node_modules/escalade/**/*.js",
+      "node_modules/yargs/**/*.js",
+      "node_modules/yargs-parser/**/*.js"
+    ],
+    "targets": ["node18-win-x64"]
   }
 }
